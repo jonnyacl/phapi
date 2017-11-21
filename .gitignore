@@ -1,0 +1,6 @@
+*config.py
+/bin/*
+__pycache__/
+lib/
+pip-selfcheck.json
+pyvenv.cfg
