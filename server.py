@@ -6,23 +6,35 @@ from sqlalchemy import create_engine
 from json import dumps
 from flask import jsonify
 
+import datetime
+
 import config as cnf
+from phapienv.models.user import UserSchema
 
 import MySQLdb
 
-db = MySQLdb.connect(cnf.db_host, cnf.db_user, cnf.db_pw, cnf.db_name)
-cursor = db.cursor()
+def db():
+    return MySQLdb.connect(cnf.db_host, cnf.db_user, cnf.db_pw, cnf.db_name)
+
+def query_db(query, args=(), one=False):
+    cur = db().cursor()
+    cur.execute(query, args)
+    r = [dict((cur.description[i][0], value) \
+               for i, value in enumerate(row)) for row in cur.fetchall()]
+    cur.connection.close()
+    return (r[0] if r else None) if one else r
+
 app = Flask(__name__)
 api = Api(app)
 
-class UserTokens(Resource):
-    def get(self):
-        query = cursor.execute("select * from usertoken")
-        return {'tokens': [i[1] for i in cursor.fetchall()]}
 
-api.add_resource(UserTokens, '/tokens')
+@app.route('/users')
+def get_users():
+    # schema = UserSchema(many=True)
+    r = query_db("select * from user")
+
+    return jsonify(r)
+
 
 if __name__ == '__main__':
     app.run(port=8082)
-
-
