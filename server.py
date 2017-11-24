@@ -5,6 +5,7 @@ from flask_restful import Resource, Api
 from sqlalchemy import create_engine
 from json import dumps
 from flask import jsonify
+from flask import request
 
 import datetime
 
@@ -27,12 +28,23 @@ def query_db(query, args=(), one=False):
 app = Flask(__name__)
 api = Api(app)
 
+def authenticate(req):
+    if req is None or req is '':
+        return None
+    usertoken = query_db("select * from usertoken where jwt = '" + req + "'")
+    userid = usertoken[0].get('userId')
+    user = query_db("select * from user where userId = '" + str(userid) + "'")
+    if len(user) != 1:
+        return None
+    return user[0]
 
 @app.route('/users')
 def get_users():
     # schema = UserSchema(many=True)
+    user = authenticate(request.headers.get('authorization'))
+    if user is None:
+        return jsonify("Invalid user")
     r = query_db("select * from user")
-
     return jsonify(r)
 
 
