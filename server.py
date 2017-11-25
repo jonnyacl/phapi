@@ -6,11 +6,13 @@ from sqlalchemy import create_engine
 from json import dumps
 from flask import jsonify
 from flask import request
+from flask import Response
 
 import datetime
 
 import config as cnf
 from phapienv.models.user import UserSchema
+from phapienv.hasher import hash
 
 import MySQLdb
 
@@ -38,6 +40,13 @@ def authenticate(req):
         return None
     return user[0]
 
+def build_response(data, code):
+    resp = Response(data)
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    resp.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+    resp.status_code = code
+    return resp
+
 @app.route('/users')
 def get_users():
     # schema = UserSchema(many=True)
@@ -46,6 +55,27 @@ def get_users():
         return jsonify("Invalid user")
     r = query_db("select * from user")
     return jsonify(r)
+
+@app.route('/login', methods=['POST', 'OPTIONS'])
+def login():
+    resp = build_response("", 200)
+    req = request.json
+    if req is not None:
+        resp = build_response("Test", 200)
+        users = query_db("select * from user where userName='" + req['username'] + "'")
+        if len(users) != 1:
+            return build_response("Invalid", 401)
+        user = users[0]
+        pwHash = hash(req['password'])
+        realHash = user['pwHash']
+        if pwHash != realHash:
+            return build_response("Invalid password", 401)
+
+        # logged in, return user details and jwt
+        return resp
+
+    # sends pre request OPTIONS
+    return resp
 
 
 if __name__ == '__main__':
