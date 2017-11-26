@@ -8,25 +8,10 @@ from flask import jsonify
 from flask import request
 from flask import Response
 
-import datetime
-
-import config as cnf
-from phapienv.models.user import UserSchema
 from phapienv.hasher import hash
+from phapienv.db_talker import query_db
 
-import MySQLdb
-
-def db():
-    return MySQLdb.connect(cnf.db_host, cnf.db_user, cnf.db_pw, cnf.db_name)
-
-def query_db(query, args=(), one=False):
-    cur = db().cursor()
-    cur.execute(query, args)
-    r = [dict((cur.description[i][0], value) \
-               for i, value in enumerate(row)) for row in cur.fetchall()]
-    cur.connection.close()
-    return (r[0] if r else None) if one else r
-
+import phapienv.tokens as tokens
 app = Flask(__name__)
 api = Api(app)
 
@@ -41,10 +26,9 @@ def authenticate(req):
     return user[0]
 
 def build_response(data, code):
-    resp = Response(data)
+    resp = app.response_class(response=data, status=code, mimetype='application/json')
     resp.headers['Access-Control-Allow-Origin'] = '*'
     resp.headers['Access-Control-Allow-Headers'] = 'Content-Type'
-    resp.status_code = code
     return resp
 
 @app.route('/users')
@@ -61,7 +45,6 @@ def login():
     resp = build_response("", 200)
     req = request.json
     if req is not None:
-        resp = build_response("Test", 200)
         users = query_db("select * from user where userName='" + req['username'] + "'")
         if len(users) != 1:
             return build_response("Invalid", 401)
@@ -71,8 +54,12 @@ def login():
         if pwHash != realHash:
             return build_response("Invalid password", 401)
 
-        # logged in, return user details and jwt
-        return resp
+        token = {
+            'jwt' : tokens.make_token(user, 'w')
+        }
+
+        # logged in, return jwt containing user details
+        return build_response(jsonify(token).data, 200)
 
     # sends pre request OPTIONS
     return resp
