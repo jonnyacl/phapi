@@ -15,7 +15,7 @@ def make_token(user, token_type):
     expiry = created.replace(year = created.year + 5)
 
     token = jwt.encode(payload, secret, algorithm='HS256')
-    insert = db.create_insert_statement("usertoken", jwt=token, utType=token_type, created=created,
+    db.insert_item("usertoken", jwt=token, utType=token_type, created=created,
                                         expiry=expiry, userId=user['userId'])
-    db.insert_db(insert)
+
     return token.decode(encoding="utf-8", errors="strict")

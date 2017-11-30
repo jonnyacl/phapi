@@ -12,13 +12,14 @@ def query_db(query, args=(), one=False):
     cur.connection.close()
     return (r[0] if r else None) if one else r
 
-def insert_db(insert, args=()):
-    cur = db().cursor()
-    cur.execute(insert, args)
-    db().commit()
+def exec_sql(statement, args=()):
+    database = db()
+    cur = database.cursor()
+    cur.execute(statement, args)
+    database.commit()
     cur.connection.close()
 
-def create_insert_statement(table, **items):
+def insert_item(table, **items):
     columns = "("
     values = "("
     a = 1
@@ -40,4 +41,21 @@ def create_insert_statement(table, **items):
             columns += ","
         a += 1
     insert_statement = "INSERT into " + table.upper() + " " + columns + " values " + values
-    return insert_statement
+    exec_sql(insert_statement)
+
+def remove_item(table, **conditions):
+    s = "DELETE FROM " + table + " WHERE "
+    cons = ""
+    a = 1
+    for c in conditions:
+        value = conditions.get(c)
+        try:
+            value = value.decode(encoding="utf-8", errors="strict")
+        except AttributeError:
+            pass
+        cons += c + " = '" + value + "'"
+        if a < len(conditions):
+            cons += " AND "
+        a += 1
+    s += cons
+    exec_sql(s)
