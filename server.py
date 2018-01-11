@@ -92,7 +92,7 @@ def login():
         # logged in, return jwt containing user details
         return build_response(jsonify(token).data, 200)
 
-    # sends pre request OPTIONS
+    # sends pre request CORS OPTIONS
     return resp
 
 @app.route('/logout', methods=['POST', 'OPTIONS'])

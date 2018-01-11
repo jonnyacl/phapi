@@ -5,9 +5,14 @@ import phapienv.db_talker as db
 
 
 def make_token(user, token_type):
+    print(user)
     payload = {
         'some' : 'payload',
-        'aud' : str(user['userId'])
+        'id' : str(user['userId']),
+        'firstname' : str(user['firstName']),
+        'lastname' : str(user['lastName']),
+        'email' : str(user['email']),
+        'username' : str(user['userName'])
     }
 
     created = datetime.datetime.utcnow()
